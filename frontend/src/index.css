@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  /* DESIGN TOKENS */
+  --void: #05070d;
+  --panel: rgba(10, 16, 28, 0.65);
+  --panel-border: rgba(53, 230, 255, 0.15);
+  --cyan: #35e6ff;
+  --signal-green: #39ff88;
+  --amber: #ffb020;
+  --threat-red: #ff2f4e;
+  --grid-line: rgba(53, 230, 255, 0.08);
+  --text-primary: #e8f4ff;
+  --text-dim: #7d93ab;
+
+  /* Backward Compatibility mapping */
+  --bg-color: var(--void);
+  --panel-bg: var(--panel);
+  --panel-border-active: var(--signal-green);
+  
+  --text-muted: var(--text-dim);
+  
+  --neon-green: var(--signal-green);
+  --neon-cyan: var(--cyan);
+  --neon-red: var(--threat-red);
+  --neon-amber: var(--amber);
+  
+  /* Fonts */
+  --font-cyber: 'Orbitron', 'sans-serif';
+  --font-mono: 'JetBrains Mono', 'monospace';
+  --font-sans: 'Inter', sans-serif;
+  
+  font-family: var(--font-sans);
+  background-color: var(--void);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: var(--void);
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-image: 
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 30px 30px;
+  background-position: center;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--void);
+}
+
+/* CRT scanline effect overlay - Reduced opacity from 0.85 to 0.06 */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 9999;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.06;
+}
+
+/* Custom Scrollbar - Cyberpunk Theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(53, 230, 255, 0.25);
+  border-radius: 3px;
+  border: 1px solid rgba(53, 230, 255, 0.1);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+/* Glow Utilities */
+.glow-cyan {
+  text-shadow: 0 0 8px rgba(53, 230, 255, 0.6);
+}
+.glow-green {
+  text-shadow: 0 0 8px rgba(57, 255, 136, 0.6);
+}
+.glow-red {
+  text-shadow: 0 0 8px rgba(255, 47, 78, 0.6);
+}
+
+/* Base Headings */
+h1, h2, h3, h4 {
+  font-family: var(--font-cyber);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  /* subtle text-shadow glow on Orbitron headers only */
+  text-shadow: 0 0 8px rgba(53, 230, 255, 0.3);
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+a:hover {
+  color: var(--signal-green);
+  text-shadow: 0 0 8px rgba(57, 255, 136, 0.4);
+}
+
+code, pre {
+  font-family: var(--font-mono) !important;
+}

@@ -1,0 +1,33 @@
+# Python caches and bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Database files
+database/*.db
+database/*.db.bak
+database/backups/
+tests/*.db
+tests/*.db.bak
+
+# Logs
+backend/logs/
+*.log
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Tauri build artifacts
+frontend/src-tauri/target/
+
+# OS files
+.DS_Store
+Thumbs.db
