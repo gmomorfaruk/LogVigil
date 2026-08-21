@@ -11,6 +11,7 @@ class PhishingDetails(BaseModel):
     on_blacklist: bool
     typosquatting_detected: bool
     ip_address_url: bool
+    at_sign_in_url: bool
     suspicious_keywords: bool
 
 class PhishingAnalyzeResponse(BaseModel):
@@ -26,9 +27,14 @@ def analyze_url(req: PhishingAnalyzeRequest):
     https_enabled = url.startswith("https://")
     on_blacklist = "malicious" in url or "phish" in url or "securevault-update" in url
     
-    domain = url.split("://")[-1].split("/")[0] if "://" in url else url.split("/")[0]
-    
-    # Check if domain looks like an IP
+    raw_host = url.split("://")[-1].split("/")[0] if "://" in url else url.split("/")[0]
+
+    # Detect credential-injection attack: https://fake.com@realip.com/path
+    # In a URL, everything before '@' is credentials — the real host is AFTER '@'
+    at_sign_in_url = "@" in raw_host
+    domain = raw_host.split("@")[-1]  # Always use the real host (after @)
+
+    # Check if the real host is a raw IP address (not a domain name)
     ip_address_url = all(c.isdigit() or c == '.' for c in domain.replace(":", "")) if domain else False
     
     typosquatting_detected = "goog1e" in domain or "paypa1" in domain or "faceb00k" in domain
@@ -41,11 +47,13 @@ def analyze_url(req: PhishingAnalyzeRequest):
         score -= 40.0
     if ip_address_url:
         score -= 30.0
+    if at_sign_in_url:
+        score -= 40.0  # Credential injection / URL spoofing attack
     if suspicious_keywords:
         score -= 15.0
     if on_blacklist:
         score = 0.0
-        
+
     score = max(0.0, score)
     
     if score >= 80.0:
@@ -64,6 +72,7 @@ def analyze_url(req: PhishingAnalyzeRequest):
             "on_blacklist": on_blacklist,
             "typosquatting_detected": typosquatting_detected,
             "ip_address_url": ip_address_url,
+            "at_sign_in_url": at_sign_in_url,
             "suspicious_keywords": suspicious_keywords
         }
     }
