@@ -1,4 +1,5 @@
 import React from 'react';
+import logoImg from '../assets/logvigil_logo.png';
 import {
   LayoutDashboard,
   Shield,
@@ -31,8 +32,8 @@ function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
   return (
     <div className="cyber-sidebar">
       <div className="sidebar-brand">
-        <span className="brand-logo" style={{ color: '#00f0ff', display: 'flex', alignItems: 'center' }}>
-          <Shield size={28} />
+        <span className="brand-logo">
+          <img src={logoImg} alt="LogVigil" className="brand-logo-img" />
         </span>
         <div className="brand-title">
           <h3>LogVigil</h3>

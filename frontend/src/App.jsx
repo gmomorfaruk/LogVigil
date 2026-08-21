@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import logoImg from './assets/logvigil_logo.png';
 import './App.css';
 
 // Import components
@@ -39,6 +40,55 @@ function App() {
   const loginLockoutRef = useRef(null);
 
   const terminalEndRef = useRef(null);
+  const logfeedRef = useRef(null);
+
+  // ── Animated log feed background for login page ──
+  useEffect(() => {
+    if (user) return; // Only run on login screen
+    const el = logfeedRef.current;
+    if (!el) return;
+
+    const templates = [
+      { cls: 'lv-lg-ok',   text: h => `${h} logvigil sshd[1122]: Accepted publickey for root from 10.0.4.12 port 51422` },
+      { cls: 'lv-lg-info', text: h => `${h} logvigil kernel: [UFW BLOCK] IN=eth0 SRC=185.220.101.4 DPT=22` },
+      { cls: 'lv-lg-warn', text: h => `${h} logvigil sudo: pam_unix(sudo:auth): authentication failure; user=deploy` },
+      { cls: 'lv-lg-crit', text: h => `${h} logvigil iptables: DROP TCP 203.0.113.7:443 -> 10.0.4.12:8080` },
+      { cls: 'lv-lg-info', text: h => `${h} logvigil systemd[1]: Started Session 4821 of user analyst` },
+      { cls: 'lv-lg-ok',   text: h => `${h} logvigil cron[882]: (root) CMD (logvigil-scan --level=deep)` },
+      { cls: 'lv-lg-warn', text: h => `${h} logvigil auditd: PAM: authentication acct="root" exe="/usr/bin/su"` },
+      { cls: 'lv-lg-info', text: h => `${h} logvigil networkd: eth0: link is up, 1000Mbps, full-duplex` },
+      { cls: 'lv-lg-crit', text: h => `${h} logvigil fail2ban: [sshd] Ban 91.240.118.22 (5 attempts)` },
+      { cls: 'lv-lg-info', text: h => `${h} logvigil logvigil-core: checksum verified for /var/log/auth.log` },
+      { cls: 'lv-lg-ok',   text: h => `${h} logvigil dockerd: container 4f2a9c health=passing` },
+      { cls: 'lv-lg-warn', text: h => `${h} logvigil kernel: TCP: request_sock_TCP: Possible SYN flooding` },
+    ];
+
+    const pad = n => n.toString().padStart(2, '0');
+    const stamp = () => { const d = new Date(); return `[${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}]`; };
+
+    const colCount = window.innerWidth < 700 ? 1 : window.innerWidth < 1100 ? 2 : 3;
+    const cols = [];
+    for (let i = 0; i < colCount; i++) {
+      const c = document.createElement('div');
+      c.className = 'lv-logfeed-col';
+      el.appendChild(c);
+      cols.push(c);
+    }
+
+    const spawn = () => {
+      const tpl = templates[Math.floor(Math.random() * templates.length)];
+      const line = document.createElement('div');
+      line.className = tpl.cls;
+      line.textContent = tpl.text(stamp());
+      const col = cols[Math.floor(Math.random() * cols.length)];
+      col.appendChild(line);
+      if (col.childNodes.length > 40) col.removeChild(col.firstChild);
+    };
+
+    for (let i = 0; i < 60; i++) spawn();
+    const interval = setInterval(spawn, 550);
+    return () => { clearInterval(interval); el.innerHTML = ''; };
+  }, [user]);
 
   // Clock tick effect
   useEffect(() => {
@@ -307,88 +357,146 @@ function App() {
   return (
     <div className="cyber-main-layout">
       {!user ? (
-        <div className="app-container">
-          <header className="cyber-header" style={{ justifyContent: 'center' }}>
-            <div className="logo-container">
-              <span className="logo-icon glow-cyan">🛡️</span>
-              <div className="system-title">
-                <h1>LogVigil // Linux Security Monitor & Log Analyzer</h1>
-                <p>System Monitor | Encrypted Gateway Console</p>
-              </div>
-            </div>
-          </header>
+        <div className="lv-login-scene">
+          {/* ── Animated log feed background ── */}
+          <div id="lv-logfeed" ref={logfeedRef}></div>
 
-          <div className="auth-wrapper">
-            <div className="auth-card">
-              <h2 className="auth-title">
-                {isRegisterMode ? "REGISTER OPERATOR CREDENTIALS" : "LOGVIGIL LOGIN PROTOCOL"}
-              </h2>
-              
-              <form className="auth-form" onSubmit={isRegisterMode ? handleRegister : handleLogin}>
-                <div className="form-group">
-                  <label className="form-label">Username</label>
-                  <div className="input-container">
-                    <span className="input-icon">👤</span>
-                    <input
-                      type="text"
-                      className="cyber-input"
-                      placeholder="Enter operator code..."
-                      value={usernameInput}
-                      onChange={(e) => setUsernameInput(e.target.value)}
-                      required
-                    />
+          {/* ── Decorative layers ── */}
+          <div className="lv-grid-overlay"></div>
+          <div className="lv-radar"></div>
+          <div className="lv-radar-sweep"></div>
+          <div className="lv-vignette"></div>
+          <div className="lv-scanlines"></div>
+
+          {/* ── Stage content ── */}
+          <div className="lv-stage">
+            <header className="lv-topbar">
+              <div className="lv-badge">🔒</div>
+              <div className="lv-brandtext">
+                <img src={logoImg} alt="LogVigil" className="login-logo-img lv-logo-img" />
+                <div className="lv-brand-info">
+                  <div className="lv-brand-name">LOGVIGIL</div>
+                  <div className="lv-brand-sub">System Monitor // Encrypted Gateway Console</div>
+                </div>
+              </div>
+            </header>
+
+            <h1 className="lv-masthead" data-text="LOGVIGIL // LINUX SECURITY MONITOR &amp; LOG ANALYZER">
+              LOGVIGIL // LINUX SECURITY MONITOR &amp; LOG ANALYZER
+            </h1>
+
+            <div className="lv-tagline">
+              <span className="lv-dot"></span>
+              LINK STATUS: LISTENING &nbsp;|&nbsp; NODES ONLINE: 214 &nbsp;|&nbsp; THREAT LEVEL: NOMINAL
+            </div>
+
+            <div className="lv-content">
+              <div className="lv-cardwrap">
+                <div className="lv-corner lv-tl"></div>
+                <div className="lv-corner lv-tr"></div>
+                <div className="lv-corner lv-bl"></div>
+                <div className="lv-corner lv-br"></div>
+
+                <div className="lv-card">
+                  <div className="lv-protocol">
+                    {isRegisterMode ? 'REGISTER OPERATOR' : 'LOGVIGIL LOGIN PROTOCOL'}
+                  </div>
+                  <div className="lv-protocol-sub">
+                    {isRegisterMode ? 'Create your secure operator credentials' : 'Authenticate to continue monitoring'}
+                  </div>
+
+                  <form onSubmit={isRegisterMode ? handleRegister : handleLogin}>
+                    <div className="lv-field">
+                      <label className="lv-fieldlabel">Username</label>
+                      <div className="lv-input-wrap">
+                        <span className="lv-icon">●</span>
+                        <input
+                          type="text"
+                          className="lv-input"
+                          placeholder="operator_id"
+                          value={usernameInput}
+                          onChange={(e) => setUsernameInput(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="lv-field">
+                      <label className="lv-fieldlabel">Master Password</label>
+                      <div className="lv-input-wrap">
+                        <span className="lv-icon">🔑</span>
+                        <input
+                          type="password"
+                          className="lv-input"
+                          placeholder="••••••••••••"
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {!isRegisterMode && (
+                      <div className="lv-metarow">
+                        <span>AES-256 SESSION</span>
+                        <span className="lv-meta-link">Forgot key?</span>
+                      </div>
+                    )}
+
+                    {authError && <div className="auth-alert" style={{ marginBottom: '14px' }}>{authError}</div>}
+                    {authSuccess && <div className="auth-success" style={{ marginBottom: '14px' }}>{authSuccess}</div>}
+
+                    <button
+                      type="submit"
+                      className="lv-establish-btn"
+                      disabled={loginLockoutSeconds > 0}
+                      style={{ opacity: loginLockoutSeconds > 0 ? 0.5 : 1 }}
+                    >
+                      {loginLockoutSeconds > 0
+                        ? `⏳ ${Math.floor(loginLockoutSeconds / 60)}m ${(loginLockoutSeconds % 60).toString().padStart(2, '0')}s`
+                        : isRegisterMode ? 'Register Operator' : 'Establish Link'
+                      }
+                    </button>
+                  </form>
+
+                  <div className="lv-registerline">
+                    {isRegisterMode ? (
+                      <>
+                        Already registered?{' '}
+                        <span className="lv-reg-link" onClick={() => { setIsRegisterMode(false); setAuthError(''); setAuthSuccess(''); }}>
+                          Access Gateway
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        First time operator?{' '}
+                        <span className="lv-reg-link" onClick={() => { setIsRegisterMode(true); setAuthError(''); setAuthSuccess(''); }}>
+                          Register key
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Master Password</label>
-                  <div className="input-container">
-                    <span className="input-icon">🔑</span>
-                    <input
-                      type="password"
-                      className="cyber-input"
-                      placeholder="Enter security key..."
-                      value={passwordInput}
-                      onChange={(e) => setPasswordInput(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                {authError && <div className="auth-alert">{authError}</div>}
-                {authSuccess && <div className="auth-success">{authSuccess}</div>}
-                
-                <button
-                  type="submit"
-                  className="cyber-btn"
-                  style={{ width: '100%', marginTop: '10px', opacity: loginLockoutSeconds > 0 ? 0.5 : 1 }}
-                  disabled={loginLockoutSeconds > 0}
-                >
-                  {loginLockoutSeconds > 0
-                    ? `⏳ ${Math.floor(loginLockoutSeconds / 60)}m ${(loginLockoutSeconds % 60).toString().padStart(2, '0')}s`
-                    : isRegisterMode ? 'Register Operator' : 'Establish Link'
-                  }
-                </button>
-              </form>
-              
-              <div className="auth-footer">
-                {isRegisterMode ? (
-                  <>
-                    Already registered?
-                    <span className="auth-link" onClick={() => { setIsRegisterMode(false); setAuthError(''); setAuthSuccess(''); }}>
-                      Access Gateway
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    First time operator?
-                    <span className="auth-link" onClick={() => { setIsRegisterMode(true); setAuthError(''); setAuthSuccess(''); }}>
-                      Register Key
-                    </span>
-                  </>
-                )}
               </div>
             </div>
+          </div>
+
+          {/* ── Status ticker ── */}
+          <div className="lv-ticker">
+            <span className="lv-ticker-track">
+              <span className="lv-ticker-seg lv-cy">[GW-04]</span> handshake stable
+              <span className="lv-ticker-seg">tls_version=1.3</span>
+              <span className="lv-ticker-seg lv-ok">[OK]</span> integrity check passed
+              <span className="lv-ticker-seg">watchdog: 00:14:22 uptime</span>
+              <span className="lv-ticker-seg lv-warn">[WARN]</span> 3 failed auth attempts blocked from 41.222.x.x
+              <span className="lv-ticker-seg">journald sync complete</span>
+              <span className="lv-ticker-seg lv-cy">[GW-04]</span> handshake stable
+              <span className="lv-ticker-seg">tls_version=1.3</span>
+              <span className="lv-ticker-seg lv-ok">[OK]</span> integrity check passed
+              <span className="lv-ticker-seg">watchdog: 00:14:22 uptime</span>
+              <span className="lv-ticker-seg lv-warn">[WARN]</span> 3 failed auth attempts blocked from 41.222.x.x
+              <span className="lv-ticker-seg">journald sync complete</span>
+            </span>
           </div>
         </div>
       ) : (

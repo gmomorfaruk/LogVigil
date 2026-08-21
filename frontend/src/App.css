@@ -42,8 +42,31 @@
 }
 
 .brand-logo {
-  font-size: 28px;
-  filter: drop-shadow(0 0 8px var(--cyan));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-logo-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.8)) drop-shadow(0 0 18px rgba(0, 240, 255, 0.35));
+  animation: logo-pulse 3s ease-in-out infinite;
+}
+
+.login-logo-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.9)) drop-shadow(0 0 28px rgba(0, 240, 255, 0.4));
+  animation: logo-pulse 3s ease-in-out infinite;
+}
+
+@keyframes logo-pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.7)) drop-shadow(0 0 18px rgba(0, 240, 255, 0.3)); }
+  50%       { filter: drop-shadow(0 0 14px rgba(0, 240, 255, 1.0)) drop-shadow(0 0 32px rgba(0, 240, 255, 0.55)); }
 }
 
 .brand-title h3 {
@@ -1479,8 +1502,492 @@
 
 
 /* ==========================================================================
-   PREMIUM OVERHAUL: RADAR-OPS SECURITY CONSOLE AESTHETIC
+   LOGVIGIL SECURE GATEWAY — CYBERPUNK LOGIN REDESIGN
    ========================================================================== */
+
+/* ── Scene wrapper ── */
+.lv-login-scene {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #030608;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+}
+
+/* ── Animated log feed ── */
+#lv-logfeed {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0 28px;
+  padding: 10px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  opacity: 0.55;
+  pointer-events: none;
+  filter: blur(0.2px);
+  overflow: hidden;
+}
+
+.lv-logfeed-col {
+  flex: 1 1 300px;
+  min-width: 280px;
+  white-space: pre;
+}
+
+.lv-lg-ok   { color: #0d3a3f; }
+.lv-lg-warn { color: #4a3612; }
+.lv-lg-crit { color: #4a1414; }
+.lv-lg-info { color: #0b2f36; }
+
+/* ── Grid overlay ── */
+.lv-grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image:
+    linear-gradient(rgba(34,226,238,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,226,238,0.05) 1px, transparent 1px);
+  background-size: 38px 38px;
+  pointer-events: none;
+}
+
+/* ── Vignette ── */
+.lv-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, rgba(3,6,8,0) 0%, rgba(3,6,8,0.55) 55%, rgba(3,6,8,0.96) 100%);
+}
+
+/* ── Scanlines ── */
+.lv-scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.12) 3px,
+    rgba(0,0,0,0) 4px
+  );
+  opacity: 0.5;
+}
+
+/* ── Radar ── */
+.lv-radar {
+  position: absolute;
+  top: -140px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  z-index: 2;
+  border-radius: 50%;
+  border: 1px solid rgba(34,226,238,0.08);
+  pointer-events: none;
+}
+.lv-radar::before, .lv-radar::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(34,226,238,0.08);
+}
+.lv-radar::before { inset: 70px; }
+.lv-radar::after  { inset: 140px; }
+
+.lv-radar-sweep {
+  position: absolute;
+  top: -140px;
+  right: -140px;
+  width: 420px;
+  height: 420px;
+  z-index: 2;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(from 0deg, rgba(34,226,238,0.22), transparent 30%);
+  animation: lv-sweep 5s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes lv-sweep { to { transform: rotate(360deg); } }
+
+/* ── Stage (above all layers) ── */
+.lv-stage {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Topbar ── */
+.lv-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 36px 4px;
+  flex-shrink: 0;
+}
+
+.lv-badge {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #22e2ee;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 0 18px rgba(34,226,238,0.45), inset 0 0 10px rgba(34,226,238,0.15);
+  animation: lv-badgepulse 3s ease-in-out infinite;
+}
+@keyframes lv-badgepulse {
+  0%,100% { box-shadow: 0 0 12px rgba(34,226,238,0.4), inset 0 0 8px rgba(34,226,238,0.12); }
+  50%      { box-shadow: 0 0 26px rgba(34,226,238,0.6), inset 0 0 14px rgba(34,226,238,0.22); }
+}
+
+.lv-logo-img {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+.lv-brandtext {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lv-brand-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #22e2ee;
+  text-shadow: 0 0 12px rgba(34,226,238,0.5);
+  letter-spacing: 0.1em;
+}
+
+.lv-brand-sub {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #425058;
+  text-transform: uppercase;
+}
+
+/* ── Masthead with glitch — single line, compact ── */
+.lv-masthead {
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: clamp(11px, 1.55vw, 22px) !important;
+  letter-spacing: 0.05em;
+  color: #eaf7f9 !important;
+  padding: 4px 36px 2px !important;
+  text-shadow: 0 0 18px rgba(34,226,238,0.35) !important;
+  position: relative;
+  display: block;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lv-masthead::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 36px; top: 4px;
+  color: #22e2ee;
+  opacity: 0;
+  clip-path: inset(0 0 0 0);
+  animation: lv-glitch 6.5s steps(1) infinite;
+  pointer-events: none;
+  white-space: nowrap;
+}
+@keyframes lv-glitch {
+  0%,100% { opacity: 0; transform: translate(0,0); }
+  92%      { opacity: 0; }
+  92.5%    { opacity: 0.8; transform: translate(-2px,1px);  clip-path: inset(10% 0 70% 0); }
+  93%      { opacity: 0.8; transform: translate(2px,-1px);  clip-path: inset(60% 0 10% 0); }
+  93.5%    { opacity: 0; }
+  96%      { opacity: 0.6; transform: translate(-1px,0);    clip-path: inset(30% 0 40% 0); }
+  96.4%    { opacity: 0; }
+}
+
+/* ── Tagline ── */
+.lv-tagline {
+  padding: 2px 36px 8px;
+  font-size: 11px;
+  color: #7f97a1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.lv-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  flex-shrink: 0;
+  animation: lv-blink 1.6s ease-in-out infinite;
+}
+@keyframes lv-blink { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+
+/* ── Content / card area ── */
+.lv-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px 8px;
+  overflow: hidden;
+}
+
+/* ── Card wrap + corner decorators ── */
+.lv-cardwrap {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+}
+
+.lv-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #22e2ee;
+  z-index: 6;
+  pointer-events: none;
+}
+.lv-tl { top: -10px; left: -10px; border-top: 2px solid; border-left: 2px solid; }
+.lv-tr { top: -10px; right: -10px; border-top: 2px solid; border-right: 2px solid; }
+.lv-bl { bottom: -10px; left: -10px; border-bottom: 2px solid; border-left: 2px solid; }
+.lv-br { bottom: -10px; right: -10px; border-bottom: 2px solid; border-right: 2px solid; }
+
+/* ── Auth card ── */
+.lv-card {
+  position: relative;
+  background: rgba(6,17,21,0.86);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(34,226,238,0.35);
+  border-radius: 6px;
+  padding: 22px 28px 18px;
+  box-shadow:
+    0 0 0 1px rgba(34,226,238,0.06),
+    0 0 40px rgba(34,226,238,0.12),
+    0 30px 60px rgba(0,0,0,0.6);
+}
+.lv-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #22e2ee, transparent);
+  box-shadow: 0 0 10px #22e2ee;
+  border-radius: 6px 6px 0 0;
+}
+
+/* ── Protocol header ── */
+.lv-protocol {
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.14em;
+  color: #22e2ee;
+  text-shadow: 0 0 12px rgba(34,226,238,0.45);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+.lv-protocol::after {
+  content: "_";
+  animation: lv-blink 1s steps(1) infinite;
+}
+
+.lv-protocol-sub {
+  text-align: center;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  color: #425058;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+/* ── Form fields ── */
+.lv-field {
+  margin-bottom: 12px;
+}
+
+.lv-fieldlabel {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  color: #7f97a1;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.lv-input-wrap {
+  position: relative;
+}
+
+.lv-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #22e2ee;
+  font-size: 14px;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.lv-input {
+  width: 100%;
+  background: rgba(4,12,15,0.75);
+  border: 1px solid rgba(34,226,238,0.25);
+  border-radius: 4px;
+  padding: 10px 14px 10px 42px;
+  color: #dff7fa;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.lv-input::placeholder { color: #425058; }
+.lv-input:focus {
+  border-color: #22e2ee;
+  box-shadow: 0 0 0 1px #22e2ee, 0 0 16px rgba(34,226,238,0.25);
+}
+
+/* ── Meta row ── */
+.lv-metarow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  color: #425058;
+  letter-spacing: 0.06em;
+  margin: -4px 0 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.lv-meta-link {
+  color: #0e5a63;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.lv-meta-link:hover { color: #22e2ee; }
+
+/* ── Establish button ── */
+.lv-establish-btn {
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(180deg, rgba(34,226,238,0.14), rgba(34,226,238,0.05));
+  border: 1px solid #22e2ee;
+  border-radius: 4px;
+  color: #22e2ee;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+}
+.lv-establish-btn:hover:not(:disabled) {
+  background: #22e2ee;
+  color: #031014;
+  box-shadow: 0 0 26px rgba(34,226,238,0.45);
+}
+.lv-establish-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.lv-establish-btn::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+  transform: skewX(-20deg);
+  animation: lv-sheen 3.4s ease-in-out infinite;
+}
+@keyframes lv-sheen {
+  0%   { left: -60%; }
+  35%  { left: 130%; }
+  100% { left: 130%; }
+}
+
+/* ── Register line ── */
+.lv-registerline {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 11px;
+  color: #425058;
+  font-family: 'JetBrains Mono', monospace;
+}
+.lv-reg-link {
+  color: #22e2ee;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+.lv-reg-link:hover { color: #34d399; }
+
+/* ── Status ticker ── */
+.lv-ticker {
+  position: relative;
+  z-index: 5;
+  border-top: 1px solid rgba(34,226,238,0.15);
+  background: rgba(3,8,10,0.75);
+  backdrop-filter: blur(3px);
+  padding: 9px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #425058;
+  flex-shrink: 0;
+}
+
+.lv-ticker-track {
+  display: inline-block;
+  padding-left: 100%;
+  animation: lv-ticker 26s linear infinite;
+}
+@keyframes lv-ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.lv-ticker-seg { margin-right: 50px; }
+.lv-ok   { color: #34d399; }
+.lv-warn { color: #ffb020; }
+.lv-cy   { color: #22e2ee; }
+
+/* Responsive */
+@media (max-width: 520px) {
+  .lv-topbar, .lv-masthead, .lv-tagline { padding-left: 20px; padding-right: 20px; }
+  .lv-card { padding: 18px 16px 16px; }
+  .lv-masthead { font-size: 10px !important; }
+  .lv-masthead::after { left: 20px; }
+}
+
+
 
 /* Overwrite root variables mappings */
 :root {
