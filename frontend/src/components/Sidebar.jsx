@@ -12,7 +12,8 @@ import {
   FileText,
   Settings,
   User,
-  LogOut
+  LogOut,
+  Eye
 } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
@@ -24,6 +25,7 @@ function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
     { id: 'network', label: 'Network Monitor', icon: Activity },
     { id: 'threats', label: 'Threat Engine', icon: AlertTriangle },
     { id: 'timeline', label: 'System Timeline', icon: Clock },
+    { id: 'activity', label: 'Activity Monitor', icon: Eye },
     { id: 'phishing', label: 'Phishing Check', icon: Fish },
     { id: 'reports', label: 'PDF Reports', icon: FileText },
     { id: 'settings', label: 'Preferences', icon: Settings },

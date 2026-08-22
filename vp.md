@@ -1,5 +1,6 @@
 # LogVigil — Viva Preparation Guide
 ### Simple, clear answers grounded in your actual code
+### Updated: Triple-Lock File Protection (Lock 3) added
 
 ---
 
@@ -25,9 +26,12 @@
 | Phishing Detector | `backend/phishing/router.py` | `analyze_url()` |
 | Security Score | `backend/security_score/router.py` | `get_security_score()` |
 | Logging | `backend/logger.py` | `log_event()` |
-| Database Schema | `backend/db.py` | `init_db()` |
+| Database Schema | `backend/db.py` | `init_db()`, `migrate_db()` |
 | PDF / Backup | `backend/reports/router.py` | — |
 | Settings / Scheduler | `backend/settings/router.py` | — |
+| **Lock 3 Crypto Engine** | `backend/integrity/key_locker.py` | `generate_keypair()`, `lock_file()`, `verify_file_integrity()` |
+| **Lock 3 API Routes** | `backend/integrity/router.py` | `enable_lock3_on_file()`, `verify_lock3_file()`, `generate_lock3_keypair()` |
+| **Lock 3 Key Storage** | `database/logvigil.db` | Table: `fim_keypairs` |
 
 ---
 
@@ -1212,6 +1216,7 @@ If you have limited time, master these in order:
 18. How is the Security Score calculated? (average of 5 component scores)
 19. Why log to both a file and SQLite? (file = human-readable, SQLite = queryable)
 20. For any feature the teacher mentions: know the file name + function name immediately
+21. What is Lock 3 / Triple-Lock? (RSA-4096 + AES-256-GCM — 3rd independent encryption layer on files)
 
 ---
 
@@ -1244,6 +1249,266 @@ Benefit?  → What security problem does it solve?
 - **Input?** Plain-text password string
 - **Output?** 64-character hex hash + 32-character hex salt (stored in `users` table)
 - **Benefit?** Makes cracking one password take minutes to hours instead of milliseconds
+
+**Lock 3 / Triple-Lock example:**
+- **What?** A third, independent encryption layer on individual files using RSA-4096 + AES-256-GCM
+- **Why?** Even if an attacker gets Lock 1 (password) + Lock 2 (vault PIN/master key), files are still unreadable without the Lock 3 passphrase
+- **How?** Hybrid encryption — random AES session key encrypts the file, RSA public key encrypts the AES key; private key is itself stored encrypted with PBKDF2-derived AES key from the passphrase
+- **Where?** `backend/integrity/key_locker.py` → `generate_keypair()`, `lock_file()`, `verify_file_integrity()`
+- **Input?** File path + user's RSA public key (from `fim_keypairs` table)
+- **Output?** `filename.lv3` encrypted file on disk; SHA-256 of plaintext stored in `integrity_baselines`
+- **Benefit?** Full compromise of the server still cannot expose file contents without the passphrase
+
+---
+
+## 14. Triple-Lock File Protection — Lock 3 (New Feature)
+
+**Files:**
+- `backend/integrity/key_locker.py` — crypto engine (new file)
+- `backend/integrity/router.py` — 6 new endpoints added
+- `backend/db.py` — `migrate_db()` adds `fim_keypairs` table
+- `frontend/src/pages/Integrity.jsx` — Lock 3 UI panel added
+
+---
+
+**Q: What is the Triple-Lock system?**
+
+A three-layer, independent security model where each lock is cryptographically separate:
+
+```
+Lock 1 — Login password     → PBKDF2-HMAC-SHA256 (auth_service.py)
+Lock 2 — Vault PIN/MasterKey → AES-256-GCM (vault/router.py)
+Lock 3 — RSA Private Key    → RSA-4096 + AES-256-GCM (key_locker.py)
+```
+
+Breaking Lock 1 and Lock 2 does NOT give access to Lock 3 protected files.
+Each lock requires a completely different secret.
+
+---
+
+**Q: What is hybrid encryption and why do you use it for Lock 3?**
+
+RSA-4096 can only encrypt ~446 bytes maximum — it cannot encrypt a whole file directly.
+Hybrid encryption solves this:
+
+```
+File content
+     ↓
+Random 32-byte AES session key generated (one per file)
+     ↓
+File encrypted with AES-256-GCM (fast, handles any file size)
+     ↓
+AES session key encrypted with RSA-4096 public key (only 32 bytes — small)
+     ↓
+Stored as .lv3 file: [RSA-len][RSA-encrypted AES key][nonce][ciphertext]
+```
+
+This is the same approach used by PGP, TLS, and Signal.
+RSA handles key transport; AES handles the actual data.
+
+---
+
+**Q: Where is the Lock 3 key generation implemented?**
+
+In `backend/integrity/key_locker.py`, the `generate_keypair(passphrase)` function:
+
+```python
+# 1. Generate RSA-4096 key pair
+private_key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+
+# 2. Derive AES key from passphrase (PBKDF2, 200,000 iterations)
+aes_key = _derive_aes_key(passphrase, salt)
+
+# 3. Encrypt the private key with AES-256-GCM
+aesgcm = AESGCM(aes_key)
+enc_private = aesgcm.encrypt(nonce, private_pem_bytes, None)
+```
+
+The passphrase is **never stored**. Only the AES-encrypted private key is in the database.
+
+---
+
+**Q: Why does Lock 3 use 200,000 PBKDF2 iterations (not 100,000 like Lock 1)?**
+
+Because Lock 3 is the **last line of defence** — if all other locks fail, only the passphrase
+stands between the attacker and the file. The higher iteration count makes brute-forcing
+the passphrase twice as slow.
+
+---
+
+**Q: Where is the Lock 3 key pair stored?**
+
+In the `fim_keypairs` SQLite table (added by `migrate_db()` in `backend/db.py`):
+
+```
+fim_keypairs:
+  username         — which user owns this key pair
+  public_key       — stored in plain (public key is NOT secret)
+  private_key_enc  — RSA private key encrypted with AES-256-GCM + passphrase
+  private_key_salt — random 16-byte salt for passphrase → key derivation
+  created_at       — timestamp
+```
+
+Even if the attacker reads the entire database, they only get the
+AES-encrypted private key. Without the passphrase → they cannot decrypt it → they
+cannot decrypt any `.lv3` file.
+
+---
+
+**Q: What does a .lv3 file look like?**
+
+A binary file with this structure:
+
+```
+Bytes 0-3:    4-byte big-endian integer = length of RSA blob (e.g. 512)
+Bytes 4-515:  RSA-4096 encrypted AES session key (512 bytes for 4096-bit RSA)
+Bytes 516-527: 12-byte AES-GCM nonce
+Bytes 528+:   AES-256-GCM ciphertext (encrypted file content + 16-byte auth tag)
+```
+
+To a hacker, this file is completely unreadable garbage bytes.
+
+---
+
+**Q: What happens during Lock 3 integrity verification?**
+
+In `verify_file_integrity()` in `key_locker.py`:
+
+```
+1. Fetch encrypted private key + salt from fim_keypairs table
+2. PBKDF2(passphrase, salt) → AES key → decrypt private key from DB (in memory)
+3. RSA private key → decrypt AES session key from .lv3 file (in memory)
+4. AES session key → decrypt .lv3 file content (in memory — never written to disk)
+5. SHA-256 of decrypted content → compare with stored baseline hash
+6. Return: UNMODIFIED / TAMPERED / DELETED / ERROR
+7. AES key and decrypted content wiped from memory
+```
+
+The decrypted content is **never written to disk at any point**.
+
+---
+
+**Q: What does TAMPERED mean for a Lock 3 file?**
+
+If AES-GCM decryption succeeds (passphrase correct) but the SHA-256 hash of the
+decrypted content does not match the stored baseline hash, it means the file content
+was changed between when Lock 3 was enabled and now.
+
+Note: if the `.lv3` file itself is tampered (bytes changed), AES-GCM's authentication
+tag will fail and decryption itself will return an error — the tampered ciphertext
+cannot even be decrypted.
+
+---
+
+**Q: What is the new DB table added for Lock 3?**
+
+`fim_keypairs` — added via `migrate_db()` in `backend/db.py`.
+
+Also, three new columns added to `integrity_baselines`:
+- `lock3_enabled` — 0 or 1
+- `lock3_path` — path to the `.lv3` encrypted file
+- `lock3_hash` — SHA-256 of the original plaintext (for verification)
+
+---
+
+**Q: What are the 6 new Lock 3 API endpoints?**
+
+| Method | Endpoint | What it does |
+|---|---|---|
+| `POST` | `/api/integrity/keypair/generate` | Generate RSA-4096 key pair |
+| `GET` | `/api/integrity/keypair/status` | Check if key pair exists |
+| `POST` | `/api/integrity/lock3/enable` | Enable Lock 3 on a file |
+| `POST` | `/api/integrity/lock3/disable` | Remove Lock 3 from a file |
+| `POST` | `/api/integrity/lock3/verify` | Verify file integrity (needs passphrase) |
+| `GET` | `/api/integrity/lock3/status` | List all Lock 3 protected files |
+
+All implemented in `backend/integrity/router.py`.
+
+---
+
+**Q: What happens if the user enters a file not yet in the FIM baseline?**
+
+The `enable_lock3_on_file()` endpoint **auto-baselines the file on the spot**:
+
+```python
+if not bl_row:
+    file_hash = compute_sha256(req.file_path)
+    folder_path = os.path.dirname(req.file_path)
+    cursor.execute(
+        "INSERT INTO integrity_baselines ...",
+        (folder_path, req.file_path, file_hash, file_size, now)
+    )
+    log_event("INFO", f"File auto-baselined for Lock 3: '{req.file_path}'")
+```
+
+So you do NOT need to pre-add the folder to FIM monitoring — just enter the full file path directly.
+
+---
+
+**Q: Explain the complete Triple-Lock flow from setup to verification.**
+
+```
+SETUP:
+1. User enters Lock 3 passphrase in the FIM page
+2. generate_keypair(passphrase) → RSA-4096 key pair
+3. Private key encrypted with AES-GCM (passphrase-derived key) → stored in fim_keypairs
+4. User enters a file path → enable_lock3_on_file()
+5. lock_file() → random AES session key → encrypt file → RSA-encrypt session key
+6. .lv3 file created; SHA-256 of plaintext stored in integrity_baselines
+
+VERIFICATION:
+1. User clicks Verify → enters Lock 3 passphrase
+2. verify_lock3_file() → fetches encrypted private key from DB
+3. passphrase → PBKDF2 → AES key → decrypt private key (in memory)
+4. private key → decrypt AES session key from .lv3
+5. AES session key → decrypt file content (in memory only)
+6. SHA-256 of plaintext → compare with baseline → UNMODIFIED / TAMPERED
+7. All key material wiped from memory
+```
+
+---
+
+**Q: What is the difference between Lock 3 and the existing Vault?**
+
+| | Vault (Lock 2) | Lock 3 |
+|---|---|---|
+| Protects | Passwords and files inside the vault | Any file on disk |
+| Algorithm | AES-256-GCM (symmetric) | RSA-4096 + AES-256-GCM (asymmetric + symmetric) |
+| Key type | Symmetric master key | Asymmetric public/private key pair |
+| Key derivation | PIN → PBKDF2 | Passphrase → PBKDF2 → AES key → encrypted RSA private key |
+| Independence | Linked to vault session | Completely independent of login and vault |
+| File location | Vault storage area | Any path on the filesystem |
+
+---
+
+**Q: Show me where Lock 3 encryption is actually called.**
+
+`backend/integrity/key_locker.py` → `lock_file()` function:
+
+```python
+aes_key = secrets.token_bytes(32)          # Random AES-256 session key
+nonce   = secrets.token_bytes(12)           # Random GCM nonce
+aesgcm  = AESGCM(aes_key)
+ciphertext = aesgcm.encrypt(nonce, plaintext, None)   # Encrypt file
+
+rsa_encrypted_key = pub_key.encrypt(        # Encrypt session key with RSA
+    aes_key,
+    padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                 algorithm=hashes.SHA256(), label=None)
+)
+```
+
+---
+
+## Lock 3 — Answer Template
+
+- **What?** A third, independent cryptographic lock on files using RSA-4096 + AES-256-GCM hybrid encryption
+- **Why?** To ensure files are unreadable even if an attacker bypasses both the login and the vault
+- **How?** Random AES session key encrypts the file; RSA-4096 public key encrypts the session key; private key is stored AES-encrypted using a PBKDF2-derived passphrase key
+- **Where?** `backend/integrity/key_locker.py` → `generate_keypair()`, `lock_file()`, `verify_file_integrity()`; routes in `backend/integrity/router.py`
+- **Input?** Any file path on disk + Lock 3 passphrase
+- **Output?** `filename.lv3` encrypted binary file; UNMODIFIED / TAMPERED / DELETED on verification
+- **Benefit?** Even full server compromise + database theft cannot expose the file content without the Lock 3 passphrase
 
 ---
 

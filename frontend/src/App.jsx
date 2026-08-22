@@ -15,6 +15,7 @@ import Timeline from './pages/Timeline';
 import Phishing from './pages/Phishing';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Activity from './pages/Activity';
 
 function App() {
   const [backendConnected, setBackendConnected] = useState(null); // null = testing, true = ok, false = offline
@@ -336,7 +337,7 @@ function App() {
       case 'firewall':
         return <Firewall addLog={addLog} />;
       case 'integrity':
-        return <Integrity addLog={addLog} />;
+        return <Integrity addLog={addLog} username={user} />;
       case 'network':
         return <Network addLog={addLog} />;
       case 'threats':
@@ -349,6 +350,8 @@ function App() {
         return <Reports addLog={addLog} />;
       case 'settings':
         return <Settings addLog={addLog} />;
+      case 'activity':
+        return <Activity addLog={addLog} />;
       default:
         return <div className="page-error">Invalid active partition selector</div>;
     }

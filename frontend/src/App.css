@@ -2820,3 +2820,167 @@ canvas {
 }
 
 
+
+/* ===================================================================
+   Phase 15: Activity Monitor Styles
+   =================================================================== */
+
+/* Status dot indicator */
+.activity-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.activity-status-dot.active {
+  background-color: #00ff88;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.6), 0 0 16px rgba(0, 255, 136, 0.3);
+  animation: activityPulse 2s ease-in-out infinite;
+}
+
+.activity-status-dot.inactive {
+  background-color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+}
+
+@keyframes activityPulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(0, 255, 136, 0.4), 0 0 12px rgba(0, 255, 136, 0.2);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(0, 255, 136, 0.8), 0 0 28px rgba(0, 255, 136, 0.4);
+    opacity: 0.8;
+  }
+}
+
+/* Stat cards */
+.activity-stat-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.activity-stat-card:hover {
+  border-color: rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.activity-stat-card:hover::before {
+  opacity: 1;
+}
+
+/* Event items */
+.activity-event-item {
+  transition: all 0.2s ease;
+}
+
+.activity-event-item:hover {
+  background-color: rgba(10, 30, 60, 0.6) !important;
+  border-color: rgba(0, 240, 255, 0.25) !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+.activity-event-opened:hover {
+  border-left-color: #00ff88 !important;
+  box-shadow: -4px 0 15px rgba(0, 255, 136, 0.1), 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+.activity-event-closed:hover {
+  border-left-color: #ff5555 !important;
+  box-shadow: -4px 0 15px rgba(255, 85, 85, 0.1), 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+/* Activity log scrollbar */
+.activity-log-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-log-list::-webkit-scrollbar-track {
+  background: rgba(0, 15, 30, 0.5);
+  border-radius: 3px;
+}
+
+.activity-log-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.2);
+  border-radius: 3px;
+}
+
+.activity-log-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.4);
+}
+
+/* Filter bar inputs focus */
+.activity-filter-bar input:focus,
+.activity-filter-bar select:focus {
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+  outline: none;
+}
+
+/* Status bar */
+.activity-status-bar {
+  background: linear-gradient(135deg, rgba(10, 25, 50, 0.5), rgba(5, 15, 35, 0.6));
+  border: 1px solid rgba(0, 240, 255, 0.15);
+}
+
+/* Clear modal animation */
+.activity-clear-modal {
+  animation: fadeInModal 0.2s ease;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.activity-clear-modal .cyber-widget {
+  animation: scaleInModal 0.25s ease;
+}
+
+@keyframes scaleInModal {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .activity-summary-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .activity-filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .activity-status-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+}

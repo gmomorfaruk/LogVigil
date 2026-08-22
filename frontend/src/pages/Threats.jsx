@@ -73,6 +73,62 @@ function Threats({ addLog }) {
     }
   };
 
+  const renderActionDetails = (actionType, payload) => {
+    if (actionType === 'FIREWALL_BLOCK') {
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+          <span style={{ backgroundColor: 'rgba(255, 85, 85, 0.15)', border: '1px solid rgba(255, 85, 85, 0.35)', color: '#ff7777', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+            ⛔ ACTION: BLOCK TRAFFIC
+          </span>
+          {payload.ip && (
+            <span style={{ backgroundColor: 'rgba(0, 240, 255, 0.1)', border: '1px solid rgba(0, 240, 255, 0.25)', color: '#00f0ff', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+              🎯 TARGET IP: {payload.ip}
+            </span>
+          )}
+          <span style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#cbd5e1', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem' }}>
+            🧭 DIRECTION: {payload.direction || 'OUTBOUND'}
+          </span>
+        </div>
+      );
+    }
+
+    if (actionType === 'FIREWALL_ENABLE') {
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+          <span style={{ backgroundColor: 'rgba(0, 255, 136, 0.15)', border: '1px solid rgba(0, 255, 136, 0.35)', color: '#00ff88', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+            🧱 ACTION: ACTIVATE FIREWALL SHIELD
+          </span>
+          <span style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#cbd5e1', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem' }}>
+            🛡️ ENFORCEMENT: Enable packet filter & port monitoring
+          </span>
+        </div>
+      );
+    }
+
+    // Generic fallback for any other action
+    const keys = Object.keys(payload || {});
+    if (keys.length === 0) {
+      return (
+        <div style={{ marginTop: '8px', color: '#94a3b8', fontSize: '0.8rem' }}>
+          Action Type: <strong style={{ color: '#00f0ff' }}>{actionType}</strong>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+        <span style={{ backgroundColor: 'rgba(0, 240, 255, 0.1)', border: '1px solid rgba(0, 240, 255, 0.25)', color: '#00f0ff', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem' }}>
+          {actionType}
+        </span>
+        {keys.map((k) => (
+          <span key={k} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#cbd5e1', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+            {k}: {String(payload[k])}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="threats-container">
       <h2 className="section-title">⚠️ Cyber Threat Decision Engine</h2>
@@ -128,25 +184,35 @@ function Threats({ addLog }) {
         ) : (
           <div className="recommendations-list">
             {recommendations.map((rec) => (
-              <div key={rec.id} className={`recommendation-item ${rec.status === 'RESOLVED' ? 'resolved' : ''}`}>
-                <div className="rec-header">
+              <div key={rec.id} className={`recommendation-item ${rec.status === 'RESOLVED' ? 'resolved' : ''}`} style={{ padding: '18px 20px', borderRadius: '8px' }}>
+                <div className="rec-header" style={{ marginBottom: '10px' }}>
                   <div className="rec-title-block">
-                    <h3>{rec.title}</h3>
-                    <span className="rec-threat-link">Linked alert: <code>{rec.threat_id}</code></span>
+                    <h3 style={{ fontSize: '1.05rem', color: '#f8fafc', fontWeight: '700', marginBottom: '4px' }}>{rec.title}</h3>
+                    <span className="rec-threat-link" style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                      Linked alert source: <code style={{ color: '#38bdf8', backgroundColor: 'rgba(0, 240, 255, 0.1)', padding: '2px 6px', borderRadius: '3px' }}>{rec.threat_id}</code>
+                    </span>
                   </div>
-                  <span className={`status-badge ${rec.status.toLowerCase()}`}>
+                  <span className={`status-badge ${rec.status.toLowerCase()}`} style={{ fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
                     {rec.status}
                   </span>
                 </div>
-                <p className="rec-description">{rec.description}</p>
-                <div className="rec-payload-box">
-                  <strong>ACTION POLICY SPECIFICATION:</strong>
-                  <code>{JSON.stringify(rec.action_payload)}</code>
+
+                <p className="rec-description" style={{ fontSize: '0.92rem', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '12px' }}>
+                  {rec.description}
+                </p>
+
+                <div className="rec-payload-box" style={{ padding: '10px 14px', backgroundColor: 'rgba(0, 15, 30, 0.6)', border: '1px solid rgba(0, 240, 255, 0.15)', borderRadius: '6px', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Remediation Policy Directive
+                  </div>
+                  {renderActionDetails(rec.action_type, rec.action_payload)}
                 </div>
+
                 {rec.status === 'PENDING' && (
                   <button
                     className="cyber-btn rec-apply-btn"
                     onClick={() => handleApplyAction(rec.id, rec.title)}
+                    style={{ fontSize: '0.85rem', padding: '8px 16px' }}
                   >
                     ⚡ DEPLOY COUNTERMEASURE
                   </button>
@@ -161,3 +227,4 @@ function Threats({ addLog }) {
 }
 
 export default Threats;
+

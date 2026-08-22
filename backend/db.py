@@ -236,9 +236,77 @@ def init_db():
                 ("notifications_enabled", "true"),
                 ("auto_update", "false"),
                 ("backup_frequency", "WEEKLY"),
-                ("last_backup_time", "")
+                ("last_backup_time", ""),
+                ("activity_monitor_enabled", "false"),
+                ("activity_poll_interval", "5")
             ]
         )
+    else:
+        # Ensure activity monitor settings exist for existing databases
+        for key, default_val in [("activity_monitor_enabled", "false"), ("activity_poll_interval", "5")]:
+            cursor.execute(
+                "INSERT INTO system_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING",
+                (key, default_val)
+            )
+    # ---------------------------------------------------------------------------
+    # Phase 15: Local Activity Monitor — process/app tracking
+    # ---------------------------------------------------------------------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS activity_logs (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT    NOT NULL,
+        event_type TEXT   NOT NULL,
+        target    TEXT    NOT NULL,
+        details   TEXT,
+        pid       INTEGER,
+        username  TEXT
+    )
+    """)
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_activity_timestamp ON activity_logs(timestamp)
+    """)
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_activity_event_type ON activity_logs(event_type)
+    """)
+    conn.commit()
+    conn.close()
+
+
+def migrate_db():
+    """
+    Safe schema migrations — adds new columns/tables without breaking existing data.
+    Called after init_db() on every startup.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # ---------------------------------------------------------------------------
+    # Lock 3: RSA key pairs per user
+    # ---------------------------------------------------------------------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS fim_keypairs (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        username         TEXT NOT NULL UNIQUE,
+        public_key       TEXT NOT NULL,
+        private_key_enc  TEXT NOT NULL,
+        private_key_salt TEXT NOT NULL,
+        created_at       TEXT NOT NULL
+    )
+    """)
+
+    # ---------------------------------------------------------------------------
+    # Lock 3 columns on integrity_baselines
+    # ---------------------------------------------------------------------------
+    for col_def in [
+        ("lock3_enabled",  "INTEGER DEFAULT 0"),
+        ("lock3_path",     "TEXT"),
+        ("lock3_hash",     "TEXT"),   # SHA-256 of plaintext at time of locking
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE integrity_baselines ADD COLUMN {col_def[0]} {col_def[1]}")
+        except Exception:
+            pass  # Column already exists — idempotent
+
     conn.commit()
     conn.close()
 
